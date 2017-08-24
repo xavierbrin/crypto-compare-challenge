@@ -1,36 +1,41 @@
 var http = require("http");
 var https = require("https");
 
-function queryCryptocompareApi(date, resolve) {	
-	var options = {
-		host: 'min-api.cryptocompare.com',
-		port: 443,
-		path: '/data/pricehistorical?fsym=ETH&tsyms=USD&ts=' + date,
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json'
-		}
-	}
-	var port = options.port == 443 ? https : http;
-	var req = port.request(options, function(res) {
-		var output = '';
-		res.setEncoding('utf8');
+function queryCryptocompareApi(date) {
+  return new Promise(function(resolve, reject) {
+    var options = {
+      host: 'min-api.cryptocompare.com',
+      port: 443,
+      path: '/data/pricehistorical?fsym=ETH&tsyms=USD&ts=' + date,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+    var port = options.port == 443 ? https : http;
+    var req = port.request(options, function(res) {
+      var output = '';
+      res.setEncoding('utf8');
 
-		res.on('data', function (chunk) {
-			output += chunk;
-		});
+      res.on('data', function (chunk) {
+        output += chunk;
+      });
 
-		res.on('end', function() {
-			var obj = JSON.parse(output);
-			resolve(res.statusCode, obj);
-		});
-	});
+      res.on('end', function() {
+        var data = JSON.parse(output);
+        resolve({
+          statusCode: res.statusCode,
+          data: data
+        });
+      });
+    });
 
-	req.on('error', function(err) {
-		throw new Error(err);
-	});
+    req.on('error', function(err) {
+      reject(err);
+    });
 
-	req.end();
+    req.end();
+  });
 };
 
 function roi(buyDate, sellDate, amount) {
@@ -39,40 +44,21 @@ function roi(buyDate, sellDate, amount) {
 		 && amount.constructor.name == 'Number'
 	) {
 		if(sellDate > buyDate) {
-			try {
-				queryCryptocompareApi(buyDate, function(statusCode, buyDateResult) {
-          try {
-            if(statusCode == 200) {
-              if( ! ( buyDateResult.Response && buyDateResult.Response == 'Error' ) ) {
-                try {
-                  queryCryptocompareApi(sellDate, function(statusCode, sellDateResult) {
-                    if( ! ( sellDateResult.Response && sellDateResult.Response == 'Error' ) ) {
-                      var gain = sellDateResult.ETH.USD * amount;
-                      var cost = buyDateResult.ETH.USD * amount;
-                      var roi = ( gain - cost ) / cost;
-                      console.log('gain : ' + gain + ', cost : ' + cost);
-                      console.log('Return on investment : ', roi);
-                      return roi;
-                    } else {
-                      throw new Error(sellDateResult.Message);
-                    }
-                  });
-                } catch(exception) {
-                  throw exception;
-                }
-              } else {
-                throw new Error(buyDateResult.Message);
-              }
-            } else {
-              throw new Error('cannot connect to min-api.cryptocompare.com');
-            }
-          } catch(exception) {
-            throw exception;
-          }
-				});
-			} catch(exception) {
-				throw exception;
-			}
+      return queryCryptocompareApi(buyDate).then(function(buyDateResult) {
+        if(buyDateResult.statusCode == 200) {
+          console.log(buyDateResult);
+          return queryCryptocompareApi(sellDate).then(function(sellDateResult) {
+            var gain = sellDateResult.data.ETH.USD * amount;
+            var cost = buyDateResult.data.ETH.USD * amount;
+            var roi = ( gain - cost ) / cost;
+            console.log('gain : ' + gain + ', cost : ' + cost);
+            console.log('Return on investment : ', roi);
+            return roi;
+          }).catch(function(exception) { console.error(exception); });
+        } else {
+          throw new Error('cannot connect to min-api.cryptocompare.com');
+        }
+      }).catch(function(exception) { console.error(exception); });
 		} else {
 			throw new Error('sellDate must be greater than buyDate');
 		}
@@ -81,6 +67,4 @@ function roi(buyDate, sellDate, amount) {
 	}
 }
 
-module.exports = function(buyDate, sellDate, amount) {
-  roi(buyDate, sellDate, amount);
-}
+module.exports = roi;
