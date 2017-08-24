@@ -39,20 +39,20 @@ function queryCryptocompareApi(date) {
 };
 
 function roi(buyDate, sellDate, amount) {
-	if(		buyDate.constructor.name == 'Number'
-		 && sellDate.constructor.name == 'Number'
-		 && amount.constructor.name == 'Number'
-	) {
+  try {
+    buyDate = parseInt(buyDate); 
+		sellDate = parseInt(sellDate); 
+		amount = parseInt(amount); 
 		if(sellDate > buyDate) {
       return queryCryptocompareApi(buyDate).then(function(buyDateResult) {
         if(buyDateResult.statusCode == 200) {
           console.log(buyDateResult);
           return queryCryptocompareApi(sellDate).then(function(sellDateResult) {
+            console.log(sellDateResult);
             var gain = sellDateResult.data.ETH.USD * amount;
             var cost = buyDateResult.data.ETH.USD * amount;
             var roi = ( gain - cost ) / cost;
-            console.log('gain : ' + gain + ', cost : ' + cost);
-            console.log('Return on investment : ', roi);
+            console.log('\nReturn on investment : ', roi);
             return roi;
           }).catch(function(exception) { console.error(exception); });
         } else {
@@ -62,9 +62,11 @@ function roi(buyDate, sellDate, amount) {
 		} else {
 			throw new Error('sellDate must be greater than buyDate');
 		}
-	} else {
+	} catch(Exception) {
 		throw new Error('invalid arguments');
 	}
 }
+
+roi(process.argv[2], process.argv[3], process.argv[4]);
 
 module.exports = roi;
