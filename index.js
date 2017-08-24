@@ -81,4 +81,6 @@ function roi(buyDate, sellDate, amount) {
 	}
 }
 
-module.exports = roi;
+module.exports = function(buyDate, sellDate, amount) {
+  roi(buyDate, sellDate, amount);
+}

@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "This module provides a function to calculate the return on investment on two ETH trades",
   "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
   "author": "Xavier Brin"
 }
