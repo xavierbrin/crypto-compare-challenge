@@ -1,5 +1,7 @@
 ## ROI Node module
 
-usage : node index.js 1453574771 1503574771 10
+This modules calculates the return on investment of tho ETH/USD transactions given the transactions timestamps 
+
+usage : ```node index.js <buy date timestamp> <sell date timestamp> <amount>```
 
 Made with fun by Xavier Brin
